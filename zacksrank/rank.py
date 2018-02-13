@@ -1,4 +1,5 @@
 #source : https://www.digitalocean.com/community/tutorials/how-to-scrape-web-pages-with-beautiful-soup-and-python-3
+# https://stackoverflow.com/questions/22003302/beautiful-soup-just-get-the-value-inside-the-tag
 
 import requests
 import csv
@@ -6,6 +7,9 @@ from bs4 import BeautifulSoup
 import pandas as pd
 import datetime
 #from sp500_list import sp500_symbols
+
+# import module sys to get the type of exception
+import sys
 
 # new functkon 
 def get_symbols():
@@ -45,39 +49,67 @@ def get_symbols():
                'VRSN', 'VZ', 'VRTX', 'VIAB', 'V', 'VNO', 'VMC', 'WMT', 'WBA', 'DIS', 'WM', 'WAT', 'ANTM', 'WFC', 'WDC', 'WU', 'WY', 'WHR', 'WFM', 'WMB',  
                'WEC', 'WYN', 'WYNN', 'XEL', 'XRX', 'XLNX', 'XL', 'XYL', 'YHOO', 'YUM', 'ZBH', 'ZION', 'ZTS' ] 
     
-    sp500_symbols = [ 'ABT', 'ABBV', 'VRTX', 'VIAB' ]
+    sp500_symbols = [ 'ABT', 'ABBV', 'VRTX', 'VIABx','EBAY']
     return sp500_symbols
 
 # main program 
-f = csv.writer(open('zackrank.csv', 'w'))
-f.writerow(['Name', 'Link'])
+#f = csv.writer(open('zackrank.csv', 'w'))
+#f.writerow(['Name', 'Link'])
 
-stocks = get_symbols()
-stock_ranks = []
-
-for symbol in stocks:
-    url = 'https://www.zacks.com/stock/quote/{}?q={}'.format(symbol,symbol) 
-    page = requests.get(url)
-    soup = BeautifulSoup(page.text, 'html.parser')
-
-    div = soup.find('div', class_='zr_rankbox')
-    p = div.find('p', class_='rank_view').get_text().split()
-    # print(p, div)
-    stock_ranks.append( [ symbol, int(p[1]) ] )
+# *****  extract_rank_info() function *********
+def extract_rank_info(symbol_):
+    row_ = []
+    try:  
+        url = 'https://www.zacks.com/stock/quote/{}?q={}'.format(symbol_,symbol_) 
+        page = requests.get(url)
+       
+        
+        #print(page.status_code)
+        soup = BeautifulSoup(page.text, 'html.parser')
+    
+        # extract Rank
+        div = soup.find('div', class_='zr_rankbox')
+        p = div.find('p', class_='rank_view').get_text().split()
+        # print(p, div)
+        rank = int(p[1])
+        
+        # extract VGM  Sytle Score 
+        div = soup.find('div', class_='zr_rankbox composite_group')
+        p = div.find('p', class_='rank_view')
+        span = p.find_all('span', class_='composite_val')
+        vgm = [x.get_text() for x in span]
+       
+        
+        row_ = [ symbol_, rank, vgm[0], vgm[1], vgm[2], vgm[3] ]
+        print(row_)
+       
+    
+    except:
+        print(symbol_," : For this symbol Eror Occured!",sys.exc_info()[0])
   
-#Todo : add pandas frame with date , extract VGM
-for x in stock_ranks:
-    print ( x)
+    return row_
+
+# *****  main() program *********
+def main():
+    stocks = get_symbols()
+    stock_ranks = []
+    
+    for symbol in stocks:  
+        row = extract_rank_info(symbol)
+        if len(row) > 0:
+            stock_ranks.append(row)
+        
+    print ( stock_ranks)
+
+    df = pd.DataFrame(stock_ranks,columns=['Symbol','Rank', 'Value', 'Growth', 'Momentum', 'VGM_composite'])
+    df['Date'] = datetime.datetime.now().strftime("%Y-%m-%d")
+    print (df)
+        
+    df.to_pickle("sp500-zacksRanks")
+
+    #you can load it back using:
+    #df = pd.read_pickle(file_name)
 
 
-df = pd.DataFrame(stock_ranks,columns=['Symbol','Rank'])
-df['Date'] = datetime.datetime.now().strftime("%Y-%m-%d")
-print (df)
-
-df.to_pickle("sp500-zacksRanks")
-
-#you can load it back using:
-#df = pd.read_pickle(file_name)
-
-
-
+# *****  callcmain() program *********
+main()
