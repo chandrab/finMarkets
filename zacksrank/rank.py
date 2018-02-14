@@ -47,6 +47,7 @@ def extract_SnP500_symbols():
 #
 # **********************************************
 def get_SnP500_symbols():
+    # TODO
     # check if pickel file exists, if so read pickel file and return symbols
     # else call extract() function , write pickel then return symbol list
     
@@ -66,8 +67,7 @@ def extract_rank_info(symbol_):
     try:  
         url = 'https://www.zacks.com/stock/quote/{}?q={}'.format(symbol_,symbol_) 
         page = requests.get(url)
-       
-        
+          
         #print(page.status_code)
         soup = BeautifulSoup(page.text, 'html.parser')
     
@@ -81,24 +81,22 @@ def extract_rank_info(symbol_):
         div = soup.find('div', class_='zr_rankbox composite_group')
         p = div.find('p', class_='rank_view')
         span = p.find_all('span', class_='composite_val')
-        vgm = [x.get_text() for x in span]
-       
+        vgm = [x.get_text() for x in span] 
         
         row_ = [ symbol_, rank, vgm[0], vgm[1], vgm[2], vgm[3] ]
         print(row_)
        
-    
     except:
         print(symbol_," : For this symbol Eror Occured!",sys.exc_info()[0])
   
     return row_
 
 
-# *****  main() program *********************
+# *****  main() function *********************
 #
 # *******************************************
 def main():
-    #stocks = get_symbols()
+
     symbol_list = get_SnP500_symbols()
     print(len(symbol_list))
     stock_ranks = []
@@ -120,7 +118,6 @@ def main():
     #you can load it back using:
     #df = pd.read_pickle(file_name)
 
-
-# *****  callcmain() program *********
+# *****  call main() program *********
 #
 main()
